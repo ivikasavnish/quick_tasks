@@ -11,7 +11,7 @@ from pathlib import Path
 
 # Configure logging (minimal, no task text logged)
 logging.basicConfig(
-    level=logging.WARNING,
+    level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[logging.StreamHandler()]
 )
@@ -72,7 +72,9 @@ class QuickTasksApp:
         
     def _on_hotkey_pressed(self):
         """Handle global hotkey press."""
+        logger.info("Hotkey pressed!")
         if not self.overlay.isVisible():
+            logger.info("Showing overlay...")
             self.overlay.show_overlay()
     
     def _on_task_submit(self, task_text: str):

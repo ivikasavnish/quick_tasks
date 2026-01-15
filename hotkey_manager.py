@@ -9,7 +9,37 @@ import threading
 import logging
 from typing import Callable, Optional
 
+from PySide6.QtCore import QObject, Signal
+
 logger = logging.getLogger(__name__)
+
+
+class HotkeySignalEmitter(QObject):
+    """Helper class to emit signals from non-Qt threads."""
+    hotkey_pressed = Signal()
+
+
+
+
+# Define missing handle types (not available in ctypes.wintypes)
+HICON = ctypes.c_void_p
+HCURSOR = ctypes.c_void_p
+HBRUSH = ctypes.c_void_p
+
+# Define WNDCLASSW structure (not available in ctypes.wintypes)
+class WNDCLASSW(ctypes.Structure):
+    _fields_ = [
+        ("style", ctypes.c_uint),
+        ("lpfnWndProc", ctypes.c_void_p),
+        ("cbClsExtra", ctypes.c_int),
+        ("cbWndExtra", ctypes.c_int),
+        ("hInstance", ctypes.wintypes.HINSTANCE),
+        ("hIcon", HICON),
+        ("hCursor", HCURSOR),
+        ("hbrBackground", HBRUSH),
+        ("lpszMenuName", ctypes.wintypes.LPCWSTR),
+        ("lpszClassName", ctypes.wintypes.LPCWSTR),
+    ]
 
 # Windows API constants
 MOD_ALT = 0x0001
@@ -32,11 +62,11 @@ class HotkeyManager:
     Manages global hotkey registration and handling.
     Uses Windows RegisterHotKey API for reliable system-wide capture.
     """
-    
+
     def __init__(self, callback: Callable[[], None]):
         """
         Initialize hotkey manager.
-        
+
         Args:
             callback: Function to call when hotkey is pressed
         """
@@ -44,6 +74,9 @@ class HotkeyManager:
         self._thread: Optional[threading.Thread] = None
         self._running = False
         self._hwnd = None
+        # Signal emitter for thread-safe callback
+        self._emitter = HotkeySignalEmitter()
+        self._emitter.hotkey_pressed.connect(callback)
         
     def start(self):
         """Start listening for hotkeys in a background thread."""
@@ -57,100 +90,47 @@ class HotkeyManager:
     def stop(self):
         """Stop listening for hotkeys."""
         self._running = False
-        
+
         # Post quit message to break the message loop
-        if self._hwnd:
+        if self._thread and self._thread.is_alive():
             try:
-                ctypes.windll.user32.PostMessageW(self._hwnd, 0x0012, 0, 0)  # WM_QUIT
+                # Post WM_QUIT to the thread's message queue
+                ctypes.windll.user32.PostThreadMessageW(
+                    self._thread.ident, 0x0012, 0, 0  # WM_QUIT
+                )
             except Exception:
                 pass
-                
-        if self._thread and self._thread.is_alive():
             self._thread.join(timeout=1.0)
             
     def _run_message_loop(self):
         """Run the Windows message loop for hotkey events."""
         user32 = ctypes.windll.user32
-        
-        # Create a message-only window for receiving hotkey messages
-        WNDPROC = ctypes.WINFUNCTYPE(
-            ctypes.c_long,
-            ctypes.wintypes.HWND,
-            ctypes.c_uint,
-            ctypes.wintypes.WPARAM,
-            ctypes.wintypes.LPARAM
-        )
-        
-        def wndproc(hwnd, msg, wparam, lparam):
-            if msg == WM_HOTKEY:
-                if wparam == HOTKEY_ID:
-                    # Call callback in main thread via Qt
-                    from PySide6.QtCore import QMetaObject, Qt, Q_ARG
-                    from PySide6.QtWidgets import QApplication
-                    
-                    app = QApplication.instance()
-                    if app:
-                        # Use invokeMethod for thread-safe callback
-                        QMetaObject.invokeMethod(
-                            app,
-                            lambda: self.callback(),
-                            Qt.ConnectionType.QueuedConnection
-                        )
-                return 0
-            return user32.DefWindowProcW(hwnd, msg, wparam, lparam)
-        
-        # Register window class
-        wndclass = ctypes.wintypes.WNDCLASSW()
-        wndclass.lpfnWndProc = WNDPROC(wndproc)
-        wndclass.hInstance = ctypes.windll.kernel32.GetModuleHandleW(None)
-        wndclass.lpszClassName = "QuickTasksHotkey"
-        
-        atom = user32.RegisterClassW(ctypes.byref(wndclass))
-        if not atom:
-            logger.error("Failed to register window class")
-            return
-            
-        # Create message-only window (HWND_MESSAGE)
-        HWND_MESSAGE = ctypes.wintypes.HWND(-3)
-        self._hwnd = user32.CreateWindowExW(
-            0,
-            wndclass.lpszClassName,
-            "QuickTasksHotkeyWindow",
-            0,
-            0, 0, 0, 0,
-            HWND_MESSAGE,
-            None,
-            wndclass.hInstance,
-            None
-        )
-        
-        if not self._hwnd:
-            logger.error("Failed to create message window")
-            return
-            
-        # Register hotkey: Ctrl+Shift+P
+
+        # Register hotkey with NULL hwnd (thread message queue)
         modifiers = MOD_CONTROL | MOD_SHIFT | MOD_NOREPEAT
-        if not user32.RegisterHotKey(self._hwnd, HOTKEY_ID, modifiers, VK_P):
+        if not user32.RegisterHotKey(None, HOTKEY_ID, modifiers, VK_P):
             error = ctypes.get_last_error()
             logger.error(f"Failed to register hotkey (error: {error})")
             logger.info("Hotkey Ctrl+Shift+P may be in use by another application")
             return
-            
+
         logger.info("Registered hotkey: Ctrl+Shift+P")
-        
-        # Message loop
+
+        # Message loop - check messages directly
         msg = ctypes.wintypes.MSG()
         while self._running:
             result = user32.GetMessageW(ctypes.byref(msg), None, 0, 0)
             if result == 0 or result == -1:
                 break
-            user32.TranslateMessage(ctypes.byref(msg))
-            user32.DispatchMessageW(ctypes.byref(msg))
-            
+
+            # Check for hotkey message
+            if msg.message == WM_HOTKEY and msg.wParam == HOTKEY_ID:
+                logger.info("Hotkey detected in message loop")
+                # Emit signal to call callback in main Qt thread
+                self._emitter.hotkey_pressed.emit()
+
         # Cleanup
-        user32.UnregisterHotKey(self._hwnd, HOTKEY_ID)
-        user32.DestroyWindow(self._hwnd)
-        user32.UnregisterClassW(wndclass.lpszClassName, wndclass.hInstance)
+        user32.UnregisterHotKey(None, HOTKEY_ID)
         logger.info("Hotkey manager stopped")
 
 
@@ -184,13 +164,5 @@ class FallbackHotkeyManager:
             
     def _on_hotkey(self):
         """Handle hotkey press."""
-        from PySide6.QtCore import QMetaObject, Qt
-        from PySide6.QtWidgets import QApplication
-        
-        app = QApplication.instance()
-        if app:
-            QMetaObject.invokeMethod(
-                app,
-                lambda: self.callback(),
-                Qt.ConnectionType.QueuedConnection
-            )
+        from PySide6.QtCore import QTimer
+        QTimer.singleShot(0, self.callback)
