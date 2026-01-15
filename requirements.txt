@@ -1,0 +1,18 @@
+# Quick Tasks - Dependencies
+# Install with: pip install -r requirements.txt
+
+# Qt6 UI Framework
+PySide6>=6.6.0
+
+# Google APIs
+google-api-python-client>=2.100.0
+google-auth>=2.23.0
+google-auth-oauthlib>=1.1.0
+google-auth-httplib2>=0.1.1
+
+# Optional: Natural language date parsing
+# Uncomment if you want "tomorrow 5pm" style due dates
+# dateparser>=1.1.8
+
+# Build tools (for creating .exe)
+# pyinstaller>=6.0.0
