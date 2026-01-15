@@ -6,6 +6,7 @@ Displays a centered, translucent input field over a dimmed background.
 import ctypes
 from ctypes import wintypes
 from typing import Callable, Optional
+from PySide6.QtCore import Signal
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QLineEdit, QGraphicsDropShadowEffect,
@@ -51,18 +52,25 @@ def enable_blur_behind(hwnd: int):
 
 class DimBackground(QWidget):
     """Full-screen dimmed background overlay."""
-    
-    def __init__(self, parent=None):
+
+    def __init__(self, parent=None, on_click: Optional[Callable[[], None]] = None):
         super().__init__(parent)
+        self._on_click = on_click
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint |
             Qt.WindowType.WindowStaysOnTopHint |
             Qt.WindowType.Tool
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
         self._opacity = 0.0
         self._target_opacity = 0.6
+        self._animating = False
+
+    def mousePressEvent(self, event):
+        """Handle click on dim background to close overlay."""
+        if self._on_click:
+            self._on_click()
+        super().mousePressEvent(event)
         
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -78,19 +86,27 @@ class DimBackground(QWidget):
         
     def _animate_opacity(self, target: float, duration: int):
         """Animate opacity change."""
+        # Stop any existing animation
+        self._animating = False
+
         steps = max(1, duration // 16)  # ~60fps
         step_size = (target - self._opacity) / steps
-        
+
+        self._animating = True
+
         def step():
+            if not self._animating:
+                return
             self._opacity += step_size
             if (step_size > 0 and self._opacity >= target) or \
                (step_size < 0 and self._opacity <= target):
                 self._opacity = target
+                self._animating = False
                 self.update()
                 return
             self.update()
             QTimer.singleShot(16, step)
-            
+
         step()
 
 
@@ -141,10 +157,11 @@ class TaskOverlay(QWidget):
         super().__init__(parent)
         self.on_submit = on_submit
         self.on_cancel: Optional[Callable[[], None]] = None
-        
+        self._hiding = False
+
         self._setup_window()
         self._setup_ui()
-        self._dim_background = DimBackground()
+        self._dim_background = DimBackground(on_click=self.hide_overlay)
         
     def _setup_window(self):
         """Configure window properties."""
@@ -187,36 +204,38 @@ class TaskOverlay(QWidget):
         
     def show_overlay(self):
         """Display the overlay centered on screen."""
+        self._hiding = False
+
         screen = QApplication.primaryScreen()
         if not screen:
             return
-            
+
         screen_geo = screen.geometry()
-        
+
         # Size: 30% of screen width
         width = int(screen_geo.width() * 0.3)
         height = 120
-        
+
         # Center position
         x = screen_geo.x() + (screen_geo.width() - width) // 2
         y = screen_geo.y() + (screen_geo.height() - height) // 2
-        
+
         # Show dim background
         self._dim_background.setGeometry(screen_geo)
         self._dim_background.show()
         self._dim_background.fade_in()
-        
+
         # Position and show overlay
         self.setGeometry(x, y, width, height)
         self.show()
-        
+
         # Enable blur effect (Windows 11)
         try:
             hwnd = int(self.winId())
             enable_blur_behind(hwnd)
         except Exception:
             pass
-            
+
         # Focus input
         self.input_field.clear()
         self.input_field.setFocus()
@@ -224,6 +243,10 @@ class TaskOverlay(QWidget):
         
     def hide_overlay(self):
         """Hide the overlay with animation."""
+        if self._hiding:
+            return
+        self._hiding = True
+
         self._dim_background.fade_out()
         QTimer.singleShot(100, self._dim_background.hide)
         self.hide()
@@ -243,19 +266,6 @@ class TaskOverlay(QWidget):
                 self.on_cancel()
         else:
             super().keyPressEvent(event)
-            
-    def focusOutEvent(self, event):
-        """Hide overlay when focus is lost."""
-        # Small delay to allow for intentional clicks elsewhere
-        QTimer.singleShot(100, self._check_focus)
-        super().focusOutEvent(event)
-        
-    def _check_focus(self):
-        """Check if we should hide due to lost focus."""
-        if self.isVisible() and not self.isActiveWindow():
-            # Don't hide if input still has focus
-            if not self.input_field.hasFocus():
-                self.hide_overlay()
 
 
 class LightTaskOverlay(TaskOverlay):

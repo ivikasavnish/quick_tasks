@@ -32,7 +32,7 @@ if exist "dist" rmdir /s /q "dist"
 
 REM Build
 echo Building executable...
-pyinstaller quick_tasks.spec --clean
+python -m PyInstaller quick_tasks.spec --clean
 
 if errorlevel 1 (
     echo.
