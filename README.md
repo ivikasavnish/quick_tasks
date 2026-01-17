@@ -6,6 +6,12 @@ A lightweight utility to instantly add tasks to various task managers using a gl
 
 ![Quick Tasks Demo](docs/demo.gif)
 
+## 📚 Documentation
+
+- **[Quick Start Guide](QUICKSTART.md)** - Get started in 5 minutes
+- **[Configuration Examples](examples/README.md)** - Example configurations
+- **[Publishing Guide](PUBLISHING.md)** - How to publish to PyPI
+
 ## Features
 
 - 🚀 **Instant capture**: Global hotkey works from any application

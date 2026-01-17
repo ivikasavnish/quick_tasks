@@ -1,0 +1,9 @@
+{
+  "start_with_windows": true,
+  "hotkey": "ctrl+shift+p",
+  "theme": "dark",
+  "show_notifications": true,
+  "overlay_width_percent": 30,
+  "storage_backend": "google",
+  "default_tasklist": null
+}
