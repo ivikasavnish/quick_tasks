@@ -58,7 +58,7 @@ Issues = "https://github.com/ivikasavnish/quick_tasks/issues"
 quick-tasks = "quick_tasks.main:main"
 
 [tool.setuptools]
-packages = ["quick_tasks"]
+packages = ["quick_tasks", "quick_tasks.storage"]
 
 [tool.setuptools.package-data]
 quick_tasks = ["resources/*.ico", "resources/*.png", "config/.gitkeep"]
