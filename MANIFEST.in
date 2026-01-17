@@ -1,0 +1,5 @@
+include README.md
+include LICENSE
+include requirements.txt
+recursive-include quick_tasks/resources *.ico *.png
+recursive-include quick_tasks/config .gitkeep
