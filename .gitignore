@@ -9,6 +9,7 @@ dist/
 *.egg-info/
 .eggs/
 *.egg
+MANIFEST
 
 # Virtual environments
 venv/
@@ -30,9 +31,11 @@ ENV/
 config/credentials.json
 config/token.json
 config/settings.json
+config/tasks.json
 
 # Keep the config directory structure
 !config/.gitkeep
+!quick_tasks/config/.gitkeep
 
 # OS files
 .DS_Store

@@ -1,0 +1,64 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quick-tasks"
+version = "1.0.0"
+description = "A lightweight utility to instantly add tasks to various task managers using a global keyboard shortcut"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Quick Tasks Contributors"}
+]
+keywords = ["tasks", "productivity", "hotkey", "google-tasks", "todo"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business :: Scheduling",
+    "Topic :: Utilities",
+]
+
+dependencies = [
+    "PySide6>=6.6.0",
+    "google-api-python-client>=2.100.0",
+    "google-auth>=2.23.0",
+    "google-auth-oauthlib>=1.1.0",
+    "google-auth-httplib2>=0.1.1",
+    "pynput>=1.7.6",  # Cross-platform keyboard/mouse control
+]
+
+[project.optional-dependencies]
+dev = [
+    "pyinstaller>=6.0.0",
+    "black",
+    "pytest",
+]
+dateparser = [
+    "dateparser>=1.1.8",
+]
+
+[project.urls]
+Homepage = "https://github.com/ivikasavnish/quick_tasks"
+Repository = "https://github.com/ivikasavnish/quick_tasks"
+Issues = "https://github.com/ivikasavnish/quick_tasks/issues"
+
+[project.scripts]
+quick-tasks = "quick_tasks.main:main"
+
+[tool.setuptools]
+packages = ["quick_tasks", "quick_tasks.storage"]
+
+[tool.setuptools.package-data]
+quick_tasks = ["resources/*.ico", "resources/*.png", "config/.gitkeep"]

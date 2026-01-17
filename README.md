@@ -1,45 +1,169 @@
 # Quick Tasks
 
-A lightweight Windows utility to instantly add tasks to Google Tasks using a global keyboard shortcut.
+A lightweight utility to instantly add tasks to various task managers using a global keyboard shortcut.
 
 **Press `Ctrl+Shift+P` anywhere → Type your task → Press Enter → Done.**
 
 ![Quick Tasks Demo](docs/demo.gif)
 
+## 📚 Documentation
+
+- **[Quick Start Guide](QUICKSTART.md)** - Get started in 5 minutes
+- **[Configuration Examples](examples/README.md)** - Example configurations
+- **[Publishing Guide](PUBLISHING.md)** - How to publish to PyPI
+
 ## Features
 
 - 🚀 **Instant capture**: Global hotkey works from any application
-- 🎨 **Beautiful overlay**: Clean, translucent UI with Windows blur effect
-- 🔒 **Secure**: OAuth 2.0 authentication, tokens stored locally
+- 🎨 **Beautiful overlay**: Clean, translucent UI
+- 🔒 **Secure**: OAuth 2.0 authentication for cloud backends, tokens stored locally
 - 💨 **Fast**: Cold start under 1 second, minimal memory footprint
-- 🔄 **Auto-start**: Optional Windows startup integration
+- 🔄 **Auto-start**: Optional system startup integration
 - 📱 **System tray**: Runs silently in background
+- 🗄️ **Multiple backends**: Choose between local storage, Google Tasks, and more
+- 🌍 **Cross-platform**: Works on Windows, macOS, and Linux
+
+## Installation
+
+### From PyPI (Recommended)
+
+```bash
+pip install quick-tasks
+```
+
+### From Source
+
+```bash
+git clone https://github.com/ivikasavnish/quick_tasks.git
+cd quick_tasks
+pip install -e .
+```
 
 ## Quick Start
 
-### 1. Install Dependencies
+### 1. Install the Package
 
 ```bash
-pip install -r requirements.txt
+pip install quick-tasks
 ```
 
-### 2. Set Up Google Cloud Project
+### 2. Run Quick Tasks
 
-You need to create a Google Cloud project and enable the Tasks API:
+```bash
+quick-tasks
+```
 
-#### Step 1: Create Project
+On first run, the application will:
+1. Create a configuration directory at `~/.config/quick_tasks/` (Linux/Mac) or `%APPDATA%/quick_tasks/` (Windows)
+2. Start with local storage by default (no setup required!)
+3. Show up in your system tray
+
+## Storage Backends
+
+Quick Tasks supports multiple storage backends:
+
+### Local Storage (Default)
+
+No setup required! Tasks are stored locally in a JSON file.
+
+- **Pros**: No authentication, works offline, completely private
+- **Cons**: Tasks only available on this device
+
+### Google Tasks
+
+Store tasks in Google Tasks (sync across devices).
+
+#### Setup Google Tasks Backend
+
+1. Set storage backend in settings:
+   - Edit `~/.config/quick_tasks/settings.json`
+   - Set `"storage_backend": "google"`
+
+2. **Create Google Cloud Project** (one-time setup):
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project
+   - Enable the Google Tasks API
+   - Configure OAuth consent screen
+   - Create OAuth credentials (Desktop app)
+   - Download `credentials.json`
+   - Place it in the config directory
+
+3. **Authenticate**:
+   - Right-click the tray icon
+   - Select "Re-authenticate"
+   - Follow the browser prompts
+
+For detailed Google Cloud setup instructions, see [Google Tasks Setup Guide](#google-tasks-setup-detailed).
+
+## Usage
+
+| Action | Key |
+|--------|-----|
+| Open task input | `Ctrl+Shift+P` |
+| Submit task | `Enter` |
+| Cancel | `Esc` |
+
+### System Tray Menu
+
+Right-click the tray icon for options:
+- **Re-authenticate**: Authenticate with cloud backend (if using Google Tasks)
+- **Start with System**: Enable/disable auto-start
+- **Quit**: Close the application
+
+## Configuration
+
+Settings are stored in `settings.json`:
+
+```json
+{
+  "start_with_windows": false,
+  "hotkey": "ctrl+shift+p",
+  "theme": "dark",
+  "show_notifications": true,
+  "overlay_width_percent": 30,
+  "storage_backend": "local"
+}
+```
+
+### Changing Storage Backend
+
+Edit `settings.json` and change `storage_backend` to:
+- `"local"` - Local JSON storage (default)
+- `"google"` - Google Tasks
+
+## Platform-Specific Notes
+
+### macOS
+- May need to grant accessibility permissions
+- Go to System Preferences → Security & Privacy → Privacy → Accessibility
+- Add Terminal or your terminal app
+
+### Linux
+- Works with X11 and Wayland
+- Tested on Ubuntu, Fedora, Arch
+- May need to install `python3-tk` for some distributions
+
+### Windows
+- Works on Windows 10/11
+- Uses native Win32 APIs for optimal performance
+
+## Google Tasks Setup (Detailed)
+
+If you want to use Google Tasks backend, follow these detailed steps:
+
+### Step 1: Create Google Cloud Project
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Click "Select a project" → "New Project"
 3. Name it "Quick Tasks" (or anything you prefer)
 4. Click "Create"
 
-#### Step 2: Enable Tasks API
+### Step 2: Enable Tasks API
 1. Go to [APIs & Services → Library](https://console.cloud.google.com/apis/library)
 2. Search for "Tasks API"
 3. Click "Google Tasks API"
 4. Click "Enable"
 
-#### Step 3: Configure OAuth Consent Screen
+### Step 3: Configure OAuth Consent Screen
 1. Go to [APIs & Services → OAuth consent screen](https://console.cloud.google.com/apis/credentials/consent)
 2. Select "External" (or "Internal" if using Google Workspace)
 3. Click "Create"
@@ -54,7 +178,7 @@ You need to create a Google Cloud project and enable the Tasks API:
 9. On "Test users" page, add your Google email
 10. Click "Save and Continue" then "Back to Dashboard"
 
-#### Step 4: Create OAuth Credentials
+### Step 4: Create OAuth Credentials
 1. Go to [APIs & Services → Credentials](https://console.cloud.google.com/apis/credentials)
 2. Click "Create Credentials" → "OAuth client ID"
 3. Application type: "Desktop app"
@@ -62,109 +186,67 @@ You need to create a Google Cloud project and enable the Tasks API:
 5. Click "Create"
 6. Click "Download JSON"
 7. Rename the downloaded file to `credentials.json`
-8. Place it in the `config/` folder of this project
-
-### 3. Run the Application
-
-```bash
-python main.py
-```
-
-On first run:
-1. A browser window will open for Google authentication
-2. Sign in with your Google account
-3. Grant access to Google Tasks
-4. Close the browser when prompted
-5. The app is now running in your system tray!
-
-## Usage
-
-| Action | Key |
-|--------|-----|
-| Open task input | `Ctrl+Shift+P` |
-| Submit task | `Enter` |
-| Cancel | `Esc` |
-
-### System Tray Menu
-
-Right-click the tray icon for options:
-- **Re-authenticate Google**: Get new OAuth tokens
-- **Start with Windows**: Enable/disable auto-start
-- **Quit**: Close the application
+8. Place it in the config directory:
+   - Linux/Mac: `~/.config/quick_tasks/credentials.json`
+   - Windows: `%APPDATA%/quick_tasks/credentials.json`
 
 ## Building Executable
 
-To create a standalone `.exe` file:
+To create a standalone executable:
 
-### Option 1: Using Build Script (Recommended)
-
-```bash
-build.bat
-```
-
-### Option 2: Manual Build
+### Using PyInstaller
 
 ```bash
 pip install pyinstaller
 pyinstaller quick_tasks.spec --clean
 ```
 
-The executable will be in `dist/QuickTasks.exe`.
+The executable will be in `dist/QuickTasks` (or `dist/QuickTasks.exe` on Windows).
 
-**Important**: Copy your `config/credentials.json` to `dist/config/` before distributing.
+**Important**: If using Google Tasks, copy your `credentials.json` to the config directory of the built app before distributing.
 
 ## Project Structure
 
 ```
 quick_tasks/
-├── main.py              # Application entry point
-├── hotkey_manager.py    # Global hotkey registration (Win32 API)
-├── overlay_ui.py        # Translucent overlay UI (PySide6)
-├── google_tasks_client.py # Google Tasks API client
-├── tray_manager.py      # System tray icon & menu
-├── startup_manager.py   # Windows auto-start registration
-├── config.py            # Configuration management
-├── config/
-│   ├── credentials.json # OAuth client credentials (you provide)
-│   ├── token.json       # OAuth tokens (auto-generated)
-│   └── settings.json    # App settings (auto-generated)
-└── resources/
-    └── icon.ico         # Application icon (optional)
-```
-
-## Configuration
-
-Settings are stored in `config/settings.json`:
-
-```json
-{
-  "start_with_windows": false,
-  "hotkey": "ctrl+shift+p",
-  "theme": "dark",
-  "show_notifications": true,
-  "overlay_width_percent": 30
-}
+├── quick_tasks/         # Main package
+│   ├── __init__.py      # Package initialization
+│   ├── main.py          # Application entry point
+│   ├── config.py        # Configuration management
+│   ├── overlay_ui.py    # Translucent overlay UI (PySide6)
+│   ├── tray_manager.py  # System tray icon & menu
+│   ├── hotkey_manager_xplatform.py  # Cross-platform hotkey manager
+│   ├── startup_manager_xplatform.py # Cross-platform auto-start
+│   ├── google_tasks_client.py       # Google Tasks API client
+│   ├── storage/         # Storage backends
+│   │   ├── __init__.py  # Abstract base class
+│   │   ├── local_storage.py  # Local JSON storage
+│   │   ├── google_tasks.py   # Google Tasks backend
+│   │   └── factory.py   # Backend factory
+│   ├── resources/       # Icons and assets
+│   └── config/          # Config directory structure
+├── pyproject.toml       # Package configuration
+├── README.md            # This file
+└── LICENSE              # MIT License
 ```
 
 ## Design Decisions
 
+### Storage Backends
+- **Pluggable architecture**: Easy to add new backends (Todoist, Microsoft To-Do, etc.)
+- **Local-first**: Works offline by default with local storage
+- **Optional cloud sync**: Use Google Tasks for multi-device sync
+
 ### Why PySide6?
-- Native Windows blur/acrylic effect support
-- Built-in system tray support (no extra dependencies)
+- Cross-platform support (Windows, macOS, Linux)
+- Native system tray support (no extra dependencies)
 - Better rendering than Tkinter
 - MIT license (vs PyQt6's GPL)
 
-### Why Win32 API for Hotkeys?
-- Most reliable method for global hotkeys on Windows
-- Works even when other apps have focus
-- No polling (event-driven)
-- `MOD_NOREPEAT` prevents key repeat spam
-
-### Why Not Use `keyboard` Library?
-- Requires admin/root privileges on some systems
-- Uses low-level hooks that can trigger antivirus
-- Less reliable with certain keyboard layouts
-- We provide it as fallback if Win32 fails
+### Hotkey Management
+- **Cross-platform**: Uses `pynput` for Mac/Linux, Win32 API for Windows
+- **Global hotkeys**: Works even when other apps have focus
+- **Event-driven**: No polling, minimal CPU usage
 
 ### Security Considerations
 - Task text is never logged
