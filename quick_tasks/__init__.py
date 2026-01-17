@@ -7,6 +7,10 @@ A lightweight utility for power users who value speed over ceremony.
 __version__ = "1.0.0"
 __author__ = "Quick Tasks Contributors"
 
-from quick_tasks.main import main
+# Lazy import to avoid requiring GUI libraries for non-GUI usage
+def main():
+    """Entry point for the application."""
+    from quick_tasks.main import main as _main
+    return _main()
 
 __all__ = ["main", "__version__"]
